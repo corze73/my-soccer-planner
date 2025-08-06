@@ -25,14 +25,24 @@ const WeeklyPlanner: React.FC = () => {
   };
 
   const handleCreateSession = async (sessionData: any) => {
+    console.log('WeeklyPlanner: Creating session with data:', sessionData);
+    
     let result;
     if (editingSession) {
+      console.log('WeeklyPlanner: Updating existing session:', editingSession.id);
       result = await updateSession(editingSession.id, sessionData);
     } else {
+      console.log('WeeklyPlanner: Creating new session');
       result = await createSession(sessionData);
     }
+    
+    console.log('WeeklyPlanner: Session operation result:', result);
+    
     if (result.error) {
+      console.error('WeeklyPlanner: Session operation failed:', result.error);
       throw new Error(result.error);
+    } else {
+      console.log('WeeklyPlanner: Session operation successful');
     }
   };
 

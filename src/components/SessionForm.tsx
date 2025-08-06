@@ -114,16 +114,32 @@ const SessionForm: React.FC<SessionFormProps> = ({
     try {
       console.log('Submitting session form with data:', formData);
       
-      await onSubmit({
-        title: formData.title,
+      // Validate required fields
+      if (!formData.title.trim()) {
+        throw new Error('Session title is required');
+      }
+      
+      if (!formData.session_date) {
+        throw new Error('Session date is required');
+      }
+      
+      // Prepare session data
+      const sessionPayload = {
+        title: formData.title.trim(),
         session_date: formData.session_date,
         duration: formData.duration,
         session_type: formData.session_type,
-        notes: formData.notes,
-        activities: formData.activities
-      });
+        notes: formData.notes.trim() || undefined,
+        activities: formData.activities.length > 0 ? formData.activities : undefined
+      };
       
+      console.log('Session payload:', sessionPayload);
+      
+      await onSubmit(sessionPayload);
+      
+      console.log('Session submitted successfully');
       onClose();
+      
       // Reset form only if not editing
       if (!session) {
         setFormData({
@@ -136,6 +152,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
         });
       }
     } catch (error: any) {
+      console.error('Session submission error:', error);
       setError(error.message);
     }
   };

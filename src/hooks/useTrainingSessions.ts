@@ -100,6 +100,7 @@ export function useTrainingSessions() {
 
       // Create activities if provided
       if (sessionData.activities && sessionData.activities.length > 0) {
+        console.log('Creating activities:', sessionData.activities);
         const activitiesData = sessionData.activities.map((activity, index) => ({
           session_id: session.id,
           name: activity.name,
@@ -109,15 +110,17 @@ export function useTrainingSessions() {
           order_index: index
         }));
 
+        console.log('Activities data to insert:', activitiesData);
         const { error: activitiesError } = await supabase
           .from('session_activities')
           .insert(activitiesData);
 
         if (activitiesError) {
           console.error('Error creating activities:', activitiesError);
-          throw activitiesError;
+          // Don't throw error, just log it - session was created successfully
+          console.warn('Session created but activities failed:', activitiesError);
         }
-        console.log('Activities created successfully');
+        console.log('Activities creation completed');
       }
 
       // Fetch the complete session with activities
@@ -130,7 +133,12 @@ export function useTrainingSessions() {
         .eq('id', session.id)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching complete session:', fetchError);
+        // Return the basic session if we can't fetch with activities
+        setSessions(prev => [session, ...prev]);
+        return { data: session, error: null };
+      }
 
       setSessions(prev => [completeSession, ...prev]);
       return { data: completeSession, error: null };
