@@ -11,6 +11,7 @@ const Auth: React.FC = () => {
   const [teamName, setTeamName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -187,6 +188,27 @@ const Auth: React.FC = () => {
               ? 'Already have an account? Sign in'
               : "Don't have an account? Sign up"}
           </button>
+        </div>
+
+        {/* Security Information */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setShowSecurityInfo(!showSecurityInfo)}
+            className="text-xs text-gray-500 hover:text-gray-700"
+          >
+            Security Information
+          </button>
+          {showSecurityInfo && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
+              <p className="mb-1">🔒 <strong>Security Features:</strong></p>
+              <ul className="text-left space-y-1">
+                <li>• Secure password authentication</li>
+                <li>• Session timeout protection</li>
+                <li>• Encrypted data transmission</li>
+                <li>• Row-level security enabled</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
