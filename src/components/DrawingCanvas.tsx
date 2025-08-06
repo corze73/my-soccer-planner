@@ -343,24 +343,38 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         break;
 
       case 'ball':
-        const ballSize = 8;
+        const ballSize = element.size || 10;
         ctx.beginPath();
         ctx.arc(element.startX, element.startY, ballSize, 0, 2 * Math.PI);
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = element.color === '#FFFFFF' ? '#000000' : element.color;
+        ctx.lineWidth = Math.max(1, element.strokeWidth / 2);
         ctx.stroke();
         
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
+        // Draw soccer ball pattern
+        ctx.strokeStyle = element.color === '#FFFFFF' ? '#000000' : element.color;
+        ctx.lineWidth = Math.max(1, element.strokeWidth / 3);
+        
+        // Vertical line
         ctx.beginPath();
-        ctx.moveTo(element.startX, element.startY - ballSize + 2);
-        ctx.lineTo(element.startX, element.startY + ballSize - 2);
+        ctx.moveTo(element.startX, element.startY - ballSize * 0.8);
+        ctx.lineTo(element.startX, element.startY + ballSize * 0.8);
         ctx.stroke();
+        
+        // Horizontal line
         ctx.beginPath();
-        ctx.moveTo(element.startX - ballSize + 2, element.startY);
-        ctx.lineTo(element.startX + ballSize - 2, element.startY);
+        ctx.moveTo(element.startX - ballSize * 0.8, element.startY);
+        ctx.lineTo(element.startX + ballSize * 0.8, element.startY);
+        ctx.stroke();
+        
+        // Add curved lines for more realistic soccer ball look
+        ctx.beginPath();
+        ctx.arc(element.startX - ballSize * 0.3, element.startY - ballSize * 0.3, ballSize * 0.4, 0, Math.PI / 2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(element.startX + ballSize * 0.3, element.startY + ballSize * 0.3, ballSize * 0.4, Math.PI, 3 * Math.PI / 2);
         ctx.stroke();
         break;
 
@@ -467,10 +481,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         };
       case 'ball':
         return {
-          x: element.startX - 8,
-          y: element.startY - 8,
-          width: 16,
-          height: 16
+          x: element.startX - (element.size || 10),
+          y: element.startY - (element.size || 10),
+          width: (element.size || 10) * 2,
+          height: (element.size || 10) * 2
         };
       case 'freehand':
       case 'curve':
@@ -554,12 +568,17 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       setIsDrawing(false);
     } else if (['player', 'ball', 'cone', 'triangle', 'diamond', 'flag'].includes(currentTool)) {
       let elementText = '1';
+      let elementSize = 10; // Default size
+      
       if (currentTool === 'player') {
         const existingPlayers = elements.filter(el => el.type === 'player');
         if (existingPlayers.length > 0) {
           const maxNumber = Math.max(...existingPlayers.map(p => parseInt(p.text || '1')));
           elementText = (maxNumber + 1).toString();
         }
+        elementSize = playerSize;
+      } else if (currentTool === 'ball') {
+        elementSize = Math.max(8, strokeWidth * 2); // Ball size based on stroke width
       }
       
       const newElement: DrawingElement = {
@@ -570,7 +589,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         text: currentTool === 'player' ? elementText : undefined,
         color: currentColor,
         strokeWidth,
-        size: currentTool === 'player' ? playerSize : undefined,
+        size: elementSize,
         visible: true,
         opacity
       };
@@ -1015,9 +1034,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               }`}
               title="Football"
             >
-              <div className="w-4 h-4 rounded-full bg-white border border-current flex items-center justify-center">
-                <div className="w-1 h-3 bg-current"></div>
-                <div className="w-3 h-1 bg-current absolute"></div>
+              <div className="w-4 h-4 rounded-full bg-white border-2 border-current flex items-center justify-center relative">
+                <div className="w-0.5 h-3 bg-current absolute"></div>
+                <div className="w-3 h-0.5 bg-current absolute"></div>
+                <div className="w-1 h-1 bg-current rounded-full absolute top-0.5 left-0.5"></div>
+                <div className="w-1 h-1 bg-current rounded-full absolute bottom-0.5 right-0.5"></div>
               </div>
             </button>
             <button
@@ -1182,11 +1203,15 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* Player Size */}
           <div className="flex items-center space-x-2">
-            <span className="text-gray-300 text-sm">Player Size:</span>
+            <span className="text-gray-300 text-sm">
+              {currentTool === 'player' ? 'Player Size:' : 
+               currentTool === 'ball' ? 'Ball Size:' : 
+               'Object Size:'}
+            </span>
             <input
               type="range"
-              min="8"
-              max="30"
+              min={currentTool === 'ball' ? "6" : "8"}
+              max={currentTool === 'ball' ? "20" : "30"}
               value={playerSize}
               onChange={(e) => setPlayerSize(parseInt(e.target.value))}
               className="w-20"
