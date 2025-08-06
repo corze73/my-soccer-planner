@@ -74,7 +74,7 @@ export function useTrainingSessions() {
     duration: number;
     session_type: 'training' | 'match';
     notes?: string;
-    activities?: Activity[];
+    activities?: SessionActivity[];
   }) => {
     if (!user) return { error: 'Not authenticated' };
 
@@ -179,13 +179,13 @@ export function useTrainingSessions() {
 
       // Create activities from template
       if (template.activities && template.activities.length > 0) {
-        const activities = template.activities.map(activity => ({
+        const activities = template.activities.map((activity, index) => ({
           session_id: session.id,
           name: activity.name,
           duration: activity.duration,
           description: activity.description,
           category: activity.category,
-          order_index: activity.order_index
+          order_index: index
         }));
 
         const { error: activitiesError } = await supabase

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { X, Calendar, Clock, FileText, Target, Plus, Edit, Trash2, Palette, Pen } from 'lucide-react';
+import { X, Calendar, Clock, FileText, Target, Plus, Trash2, Pen } from 'lucide-react';
 import { format } from 'date-fns';
-import DrillDesigner from './DrillDesigner';
 
 interface Drill {
   id: string;
@@ -184,7 +183,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
   const removeActivity = (activityId: string) => {
     setFormData(prev => ({
       ...prev,
-      activities: prev.activities.filter(a => a.id !== activityId)
+      activities: prev.activities.filter((a: Activity) => a.id !== activityId)
     }));
   };
 
@@ -217,10 +216,10 @@ const SessionForm: React.FC<SessionFormProps> = ({
       // Update existing activity
       setFormData(prev => ({
         ...prev,
-        activities: prev.activities.map(activity => 
+        activities: prev.activities.map((activity: Activity) => 
           activity.id === editingDrill.activityId
-            ? { ...activity, drills: [...(activity.drills || []), drill] }
-            : activity
+        ? { ...activity, drills: [...(activity.drills || []), drill] }
+        : activity
         )
       }));
     }
@@ -231,10 +230,10 @@ const SessionForm: React.FC<SessionFormProps> = ({
   const removeDrill = (activityId: string, drillId: string) => {
     setFormData(prev => ({
       ...prev,
-      activities: prev.activities.map(activity => 
-        activity.id === activityId
-          ? { ...activity, drills: activity.drills?.filter(d => d.id !== drillId) || [] }
-          : activity
+      activities: prev.activities.map((activity: Activity) => 
+      activity.id === activityId
+        ? { ...activity, drills: (activity.drills as Drill[]).filter((d: Drill) => d.id !== drillId) }
+        : activity
       )
     }));
   };
@@ -446,7 +445,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
 
             {/* Activities List */}
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {formData.activities.map((activity, index) => (
+              {formData.activities.map((activity: Activity, index: number) => (
                 <div key={activity.id} className={`border rounded-lg p-3 ${getCategoryColor(activity.category)}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -553,3 +552,22 @@ const SessionForm: React.FC<SessionFormProps> = ({
 };
 
 export default SessionForm;
+
+interface DrillDesignerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (drillData: { name: string; description: string; diagram: any[]; category: string }) => void;
+  drill?: {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    diagram: any[];
+  };
+}
+
+const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen: _isOpen, onClose: _onClose, onSave: _onSave, drill: _drill }) => {
+  // TODO: Implement the DrillDesigner component
+  return null;
+};
+

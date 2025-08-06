@@ -5,8 +5,22 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useTrainingSessions } from '../hooks/useTrainingSessions';
 import SessionForm from './SessionForm';
-import DraggableSession from './DraggableSession';
-import DroppableDay from './DroppableDay';
+
+// Define Drill type if not imported from elsewhere
+export interface Drill {
+  id: string;
+  name: string;
+  description: string;
+  diagram: any[];
+  category: string;
+}
+
+export interface DrillDesignerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (drillData: { name: string; description: string; diagram: any[]; category: string }) => void;
+  drill?: Drill;
+}
 
 const WeeklyPlanner: React.FC = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -63,18 +77,6 @@ const WeeklyPlanner: React.FC = () => {
     setDeleteConfirm(null);
   };
 
-  const handleMoveSession = async (sessionId: string, newDate: Date) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (!session) return;
-
-    const result = await updateSession(sessionId, {
-      session_date: format(newDate, 'yyyy-MM-dd')
-    });
-
-    if (result.error) {
-      alert('Error moving session: ' + result.error);
-    }
-  };
 
   const closeModal = () => {
     setShowAddModal(false);
@@ -104,10 +106,59 @@ const WeeklyPlanner: React.FC = () => {
             </button>
           </div>
         </div>
-
+        {/* Add your week days rendering here */}
+        <div className="grid grid-cols-7 gap-4 mt-6">
+          {weekDays.map((date) => (
+            <div key={date.toISOString()} className="bg-gray-100 rounded-lg p-4 min-h-[180px] flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">{format(date, 'EEE d')}</span>
+                <button
+                  className="p-1 rounded hover:bg-gray-200"
+                  onClick={() => handleAddSession(date)}
+                  title="Add session"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+              <div className="flex-1 space-y-2">
+                {getSessionsForDay(date).map((session: any) => (
+                  <div
+                    key={session.id}
+                    className="bg-white rounded shadow p-2 flex flex-col space-y-1 relative group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{session.title}</span>
+                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded"
+                          onClick={() => handleEditSession(session)}
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded"
+                          onClick={() => setDeleteConfirm(session.id)}
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500 space-x-2">
+                      <Clock size={14} />
+                      <span>{session.time}</span>
+                      <Users size={14} />
+                      <span>{session.players || 0}</span>
+                      <MapPin size={14} />
+                      <span>{session.location}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       <SessionForm
@@ -144,7 +195,7 @@ const WeeklyPlanner: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DndProvider>
   );
 };
 

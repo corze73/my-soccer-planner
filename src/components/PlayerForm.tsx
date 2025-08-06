@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Hash, MapPin, Zap } from 'lucide-react';
+import { X, User, MapPin, Zap } from 'lucide-react';
 import { usePositions } from '../hooks/usePositions';
 import { usePlayers } from '../hooks/usePlayers';
 
@@ -23,7 +23,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ isOpen, onClose, player, onSucc
   const [error, setError] = useState<string | null>(null);
 
   const { positions } = usePositions();
-  const { addPlayer, updatePlayer, players } = usePlayers();
+  const { addPlayer, updatePlayer } = usePlayers();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ isOpen, onClose, player, onSucc
   const removeSkill = (skillToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
+      skills: prev.skills.filter((skill: string) => skill !== skillToRemove)
     }));
   };
 
@@ -176,7 +176,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ isOpen, onClose, player, onSucc
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.skills.map((skill, index) => (
+              {formData.skills.map((skill: string, index: number) => (
                 <span
                   key={index}
                   className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"

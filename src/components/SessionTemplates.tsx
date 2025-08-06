@@ -215,7 +215,7 @@ const SessionTemplates: React.FC = () => {
               <div className="p-6">
                 <h4 className="font-medium text-gray-900 mb-4">Activities</h4>
                 <div className="space-y-4">
-                  {selectedTemplate.activities.map((activity, index) => (
+                  {selectedTemplate.activities.map((activity) => (
                     <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-medium text-gray-900">{activity.name}</h5>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, Target, Clipboard, TrendingUp, Clock, Edit } from 'lucide-react';
+import { Calendar, Users, Target, Clipboard, Clock, Edit } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useTrainingSessions } from '../hooks/useTrainingSessions';
 import { format, isThisWeek } from 'date-fns';
@@ -10,7 +10,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
   const { players } = usePlayers();
-  const { sessions, deleteSession } = useTrainingSessions();
+  const { sessions } = useTrainingSessions();
 
   const thisWeekSessions = sessions.filter(session => 
     isThisWeek(new Date(session.session_date), { weekStartsOn: 1 })

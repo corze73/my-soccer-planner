@@ -5,8 +5,6 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useTrainingSessions } from '../hooks/useTrainingSessions';
 import SessionForm from './SessionForm';
-import DraggableSession from './DraggableSession';
-import DroppableDay from './DroppableDay';
 
 const WeeklyPlanner: React.FC = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -63,18 +61,6 @@ const WeeklyPlanner: React.FC = () => {
     setDeleteConfirm(null);
   };
 
-  const handleMoveSession = async (sessionId: string, newDate: Date) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (!session) return;
-
-    const result = await updateSession(sessionId, {
-      session_date: format(newDate, 'yyyy-MM-dd')
-    });
-
-    if (result.error) {
-      alert('Error moving session: ' + result.error);
-    }
-  };
 
   const closeModal = () => {
     setShowAddModal(false);
@@ -104,47 +90,92 @@ const WeeklyPlanner: React.FC = () => {
             </button>
           </div>
         </div>
-
+        <div className="grid grid-cols-7 gap-4 mt-6">
+          {weekDays.map((date) => (
+            <div key={date.toISOString()} className="bg-gray-50 rounded-lg p-3 min-h-[180px] flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-gray-700">{format(date, 'EEE d')}</span>
+                <button
+                  className="p-1 rounded-full hover:bg-gray-200"
+                  onClick={() => handleAddSession(date)}
+                  title="Add session"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+              <div className="flex-1 space-y-2">
+                {getSessionsForDay(date).map((session: any) => (
+                  <div key={session.id} className="bg-white rounded shadow p-2 flex flex-col gap-1 relative group">
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-gray-400" />
+                      <span className="text-xs text-gray-600">{session.session_time}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-gray-400" />
+                      <span className="text-xs text-gray-600">{session.team_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span className="text-xs text-gray-600">{session.location}</span>
+                    </div>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="p-1 rounded hover:bg-gray-100"
+                        onClick={() => handleEditSession(session)}
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        className="p-1 rounded hover:bg-gray-100"
+                        onClick={() => setDeleteConfirm(session.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+        <SessionForm
+          isOpen={showAddModal || !!editingSession}
+          onClose={closeModal}
+          onSubmit={handleCreateSession}
+          selectedDate={selectedDate || undefined}
+          session={editingSession}
+          loading={loading}
+        />
 
-      <SessionForm
-        isOpen={showAddModal || !!editingSession}
-        onClose={closeModal}
-        onSubmit={handleCreateSession}
-        selectedDate={selectedDate || undefined}
-        session={editingSession}
-        loading={loading}
-      />
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Delete Session</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete this session? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDeleteSession(deleteConfirm)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Session</h3>
+              <p className="text-gray-600 mb-4">
+                Are you sure you want to delete this session? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button 
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => handleDeleteSession(deleteConfirm)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </DndProvider>
   );
 };
 

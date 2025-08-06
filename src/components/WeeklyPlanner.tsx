@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { Plus, Clock, Users, MapPin, Edit, Trash2 } from 'lucide-react';
+import { Plus, Clock, Edit, Trash2 } from 'lucide-react';
 import { useTrainingSessions } from '../hooks/useTrainingSessions';
 import SessionForm from './SessionForm';
 

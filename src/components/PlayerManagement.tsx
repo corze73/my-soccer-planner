@@ -228,7 +228,7 @@ const PlayerManagement: React.FC = () => {
                   <h4 className="font-medium text-gray-900 mb-3">Skills & Attributes</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedPlayer.skills.length > 0 ? (
-                      selectedPlayer.skills.map((skill, index) => (
+                      selectedPlayer.skills.map((skill: string, index: number) => (
                         <span
                           key={index}
                           className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
