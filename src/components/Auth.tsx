@@ -12,6 +12,7 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -160,8 +161,21 @@ const Auth: React.FC = () => {
                 placeholder="Enter your password"
                 required
                 minLength={6}
+                onFocus={() => setShowPasswordRequirements(true)}
+                onBlur={() => setShowPasswordRequirements(false)}
               />
             </div>
+            {showPasswordRequirements && isSignUp && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
+                <p className="font-medium text-blue-900 mb-1">Password Requirements:</p>
+                <ul className="text-blue-800 space-y-1">
+                  <li>• Minimum 6 characters (8+ recommended)</li>
+                  <li>• Avoid common passwords</li>
+                  <li>• Mix of letters, numbers, and symbols</li>
+                  <li>• Not found in data breaches</li>
+                </ul>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -182,7 +196,7 @@ const Auth: React.FC = () => {
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-green-600 hover:text-green-700 text-sm"
+            className="text-green-600 hover:text-green-700 text-sm font-medium"
           >
             {isSignUp
               ? 'Already have an account? Sign in'
@@ -190,25 +204,45 @@ const Auth: React.FC = () => {
           </button>
         </div>
 
-        {/* Security Information */}
+        {/* Enhanced Security Information */}
         <div className="mt-4 text-center">
           <button
             onClick={() => setShowSecurityInfo(!showSecurityInfo)}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
           >
-            Security Information
+            {showSecurityInfo ? 'Hide' : 'Show'} Security Information
           </button>
           {showSecurityInfo && (
             <div className="mt-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-              <p className="mb-1">🔒 <strong>Security Features:</strong></p>
+              <p className="mb-2">🔒 <strong>Current Security Features:</strong></p>
               <ul className="text-left space-y-1">
                 <li>• Secure password authentication</li>
                 <li>• Session timeout protection</li>
                 <li>• Encrypted data transmission</li>
                 <li>• Row-level security enabled</li>
               </ul>
+              
+              <div className="mt-3 pt-2 border-t border-blue-200">
+                <p className="mb-1">⚠️ <strong>Security Recommendations:</strong></p>
+                <ul className="text-left space-y-1 text-blue-700">
+                  <li>• Enable leaked password protection</li>
+                  <li>• Configure OTP expiry (max 1 hour)</li>
+                  <li>• Use strong, unique passwords</li>
+                  <li>• Enable two-factor authentication</li>
+                </ul>
+              </div>
             </div>
           )}
+        </div>
+        
+        {/* Admin Security Notice */}
+        <div className="mt-2 text-center">
+          <div className="inline-flex items-center px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-full">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
+            <span className="text-xs text-yellow-800">
+              Admin: Configure security settings in Supabase Dashboard
+            </span>
+          </div>
         </div>
       </div>
     </div>
