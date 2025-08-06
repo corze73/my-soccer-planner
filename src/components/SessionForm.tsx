@@ -112,6 +112,8 @@ const SessionForm: React.FC<SessionFormProps> = ({
     setError(null);
 
     try {
+      console.log('Submitting session form with data:', formData);
+      
       await onSubmit({
         title: formData.title,
         session_date: formData.session_date,
@@ -120,6 +122,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
         notes: formData.notes,
         activities: formData.activities
       });
+      
       onClose();
       // Reset form only if not editing
       if (!session) {
