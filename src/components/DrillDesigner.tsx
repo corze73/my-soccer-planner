@@ -473,6 +473,14 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               style={{ 
                 borderColor: item.color,
                 backgroundColor: 'transparent'
+              }}
+            />
+          </div>
+        );
+
+      case 'full-goal':
+        return (
+          <div key={item.id} style={style}>
             <div className="relative">
               <div className="w-16 h-8 border-2 border-white bg-transparent">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white opacity-10"></div>
@@ -487,13 +495,27 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 </svg>
               </div>
             </div>
+          </div>
+        );
+
+      case 'goal-back':
         return (
           <div key={item.id} style={style}>
             <div className="flex flex-col items-center">
-      case 'goal-side-left':
-      case 'goal-side-right':
+              <div 
                 className="w-8 h-4 border-2 border-red-500"
                 style={{ 
+                  backgroundColor: 'transparent'
+                }}
+              />
+            </div>
+          </div>
+        );
+
+      case 'goal-side-left':
+      case 'goal-side-right':
+        return (
+          <div key={item.id} style={style}>
             <div className="relative">
               <div 
                 className={`w-8 h-8 border-2 border-white bg-transparent ${
@@ -509,10 +531,24 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                   <rect width="8" height="8" fill="url(#sideNet)"/>
                 </svg>
               </div>
+            </div>
           </div>
         );
 
       case 'rectangle':
+        return (
+          <div 
+            key={item.id} 
+            style={{
+              ...style,
+              width: `${item.width}%`,
+              height: `${item.height}%`,
+              backgroundColor: item.color,
+              opacity: 0.7
+            }}
+          />
+        );
+
       case 'diamond':
         return (
           <div 
@@ -524,19 +560,6 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               backgroundColor: item.color,
               opacity: 0.7,
               transform: 'translate(-50%, -50%) rotate(45deg)'
-            }}
-          />
-        );
-
-        return (
-          <div 
-            key={item.id} 
-            style={{
-              ...style,
-              width: `${item.width}%`,
-              height: `${item.height}%`,
-              backgroundColor: item.color,
-              opacity: 0.7
             }}
           />
         );
@@ -560,15 +583,14 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
         return (
           <div key={item.id} style={style}>
             <span 
-              className="w-6 h-8 flex items-center justify-center text-black text-xs font-bold"
+              className="text-xs font-bold"
               style={{ color: item.color }}
             >
-              <div className="w-full h-full rounded-t-full bg-current opacity-80"></div>
+              {item.text}
             </span>
           </div>
         );
       
-      case 'full-goal':
       case 'notes':
         return (
           <div key={item.id} style={style}>
@@ -582,8 +604,21 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
             </div>
           </div>
         );
+
       case 'goal-front':
       case 'goal-3d':
+        return (
+          <div key={item.id} style={style}>
+            <span 
+              className="w-6 h-8 flex items-center justify-center text-black text-xs font-bold"
+              style={{ color: item.color }}
+            >
+              <div className="w-full h-full rounded-t-full bg-current opacity-80"></div>
+            </span>
+          </div>
+        );
+
+      default:
         return null;
     }
   };
@@ -660,153 +695,6 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 </div>
               </div>
 
-              {/* Balls */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Balls</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {ballTypes.map((ball) => (
-                    <button
-                      key={ball.id}
-                      onClick={() => setSelectedTool(ball.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === ball.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      title={ball.label}
-                    >
-                      <div 
-                        className="w-6 h-6 rounded-full border-2 mx-auto"
-                        style={{ 
-                          backgroundColor: ball.id === 'soccer-ball' ? '#FFFFFF' : ball.color,
-                          borderColor: ball.id === 'soccer-ball' ? '#000000' : ball.color
-                        }}
-                      />
-                      <span className="text-xs mt-1 block">{ball.label.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Equipment */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Equipment</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {equipmentItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedTool(item.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === item.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      title={item.label}
-                    >
-                      {item.id === 'cone' && (
-                        <div 
-                          className="w-4 h-5 mx-auto"
-                          style={{ 
-                            backgroundColor: item.color,
-                            clipPath: 'polygon(50% 0%, 20% 100%, 80% 100%)'
-                          }}
-                        />
-                      )}
-                      {item.id === 'flag' && (
-                        <div className="flex items-center justify-center">
-                          <div className="w-0.5 h-4 bg-gray-600"></div>
-                          <div 
-                            className="w-3 h-2 ml-0.5"
-                            style={{ backgroundColor: item.color }}
-                          ></div>
-                        </div>
-                      )}
-                      {item.id === 'pole' && (
-                        <div className="flex flex-col items-center">
-                          <div className="w-1 h-5 bg-gray-600"></div>
-                          <div className="w-2 h-0.5 bg-gray-800"></div>
-                        </div>
-                      )}
-                      {item.id.includes('disc') && (
-                        <div 
-                          className="w-4 h-1.5 rounded-full mx-auto"
-                          style={{ 
-                            backgroundColor: item.color,
-                            transform: 'perspective(10px) rotateX(60deg)'
-                          }}
-                        />
-                      )}
-                      {item.id.includes('hoop') && (
-                        <div 
-                          className="w-5 h-5 rounded-full border-2 mx-auto"
-                          style={{ 
-                            borderColor: item.color,
-                            backgroundColor: 'transparent'
-                          }}
-                        />
-                      )}
-                      {item.id.includes('goal') && !item.id.includes('full') && (
-                        <div className="flex flex-col items-center">
-                          <div 
-                            className="w-6 h-3 border-2 border-red-500"
-                            style={{ borderBottom: 'none' }}
-                          />
-                          <div className="w-6 h-0.5 bg-red-500"></div>
-                        </div>
-                      )}
-                      {item.id === 'player' && (
-                        <div 
-                          className="w-5 h-6 mx-auto rounded-t-full"
-                          style={{ backgroundColor: item.color }}
-                        />
-                      )}
-                      <span className="text-xs mt-1 block">{item.label.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Goals */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Goals</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {goalTypes.map((goal) => (
-                    <button
-                      key={goal.id}
-                      onClick={() => setSelectedTool(goal.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === goal.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      title={goal.label}
-                    >
-                      {goal.id === 'full-goal' && (
-                        <div className="w-8 h-4 border-2 border-white bg-gray-100 mx-auto relative">
-                          <div className="absolute inset-0 opacity-30">
-                            <div className="w-full h-full grid grid-cols-4 grid-rows-2 gap-px">
-                              {Array.from({length: 8}).map((_, i) => (
-                                <div key={i} className="border border-white"></div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {goal.id.includes('side') && (
-                        <div 
-                          className={`w-4 h-4 border-2 border-white bg-gray-100 mx-auto ${
-                            goal.id.includes('left') ? 'transform -skew-y-12' : 'transform skew-y-12'
-                          }`}
-                        />
-                      )}
-                      {(goal.id === 'goal-front' || goal.id === 'goal-3d' || goal.id === 'goal-back') && (
-                        <div className="w-6 h-3 border-2 border-white bg-gray-100 mx-auto" />
-                      )}
-                      <span className="text-xs mt-1 block text-center">{goal.label.replace('Goal ', '').replace(' View', '')}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
               {/* Actions */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Actions</h4>
