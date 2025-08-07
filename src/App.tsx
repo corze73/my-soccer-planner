@@ -7,6 +7,7 @@ import WeeklyPlanner from './components/WeeklyPlanner';
 import TacticalBoard from './components/TacticalBoard';
 import SessionTemplates from './components/SessionTemplates';
 import PlayerManagement from './components/PlayerManagement';
+import OfflineIndicator from './components/OfflineIndicator';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -58,6 +59,7 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {renderContent()}
       </main>
+      <OfflineIndicator />
     </div>
   );
 }
