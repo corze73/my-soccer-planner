@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, FileText, Target, Plus, Trash2, Pen } from 'lucide-react';
 import { format } from 'date-fns';
+import DrillDesigner from './DrillDesigner';
 
 interface Drill {
   id: string;
@@ -60,6 +61,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showDrillDesigner, setShowDrillDesigner] = useState(false);
   const [showActivityForm, setShowActivityForm] = useState(false);
+  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [newActivity, setNewActivity] = useState({
     name: '',
     duration: 15,
@@ -188,6 +190,35 @@ const SessionForm: React.FC<SessionFormProps> = ({
   const addDrillToActivity = () => {
     setShowDrillDesigner(true);
   };
+
+  const handleSaveDrill = (drillData: { name: string; description: string; items: any[] }) => {
+    if (currentActivityId) {
+      // Add drill to existing activity
+      setFormData(prev => ({
+        ...prev,
+        activities: prev.activities.map((activity: Activity) => 
+          activity.id === currentActivityId
+            ? { 
+                ...activity, 
+                drills: [
+                  ...(activity.drills as Drill[]), 
+                  {
+                    id: Date.now().toString(),
+                    name: drillData.name,
+                    description: drillData.description,
+                    category: 'drill',
+                    diagram: drillData.items
+                  }
+                ]
+              }
+            : activity
+        )
+      }));
+    }
+    setCurrentActivityId(null);
+    setShowDrillDesigner(false);
+  };
+
   const removeDrill = (activityId: string, drillId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -200,27 +231,6 @@ const SessionForm: React.FC<SessionFormProps> = ({
   };
 
   if (!isOpen) return null;
-
-  // Drill Designer Modal component moved above usage
-
-  // Placeholder DrillDesigner component to prevent compile error
-  // Replace this with your actual DrillDesigner implementation or import
-  const DrillDesigner: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-lg font-semibold mb-4">Drill Designer (Placeholder)</h2>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -386,14 +396,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
           <div className="flex justify-between items-center">
             <button
               type="button"
-              onClick={() => {
-                if (!newActivity.name.trim()) {
-            alert('Please enter an activity name first');
-            return;
-                }
-            // Open the drill designer modal
-            setShowDrillDesigner(true);
-              }}
+              onClick={() => setShowDrillDesigner(true)}
               className="flex items-center space-x-1 px-2 py-1 text-xs bg-white bg-opacity-70 rounded-lg hover:bg-opacity-90 transition-all"
             >
               <Pen className="w-3 h-3" />
@@ -452,12 +455,15 @@ const SessionForm: React.FC<SessionFormProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Drills:</span>
                 <button
-            type="button"
-            onClick={addDrillToActivity}
-            className="flex items-center space-x-1 px-2 py-1 text-xs bg-white bg-opacity-70 rounded-lg hover:bg-opacity-90 transition-all"
+                  type="button"
+                  onClick={() => {
+                    setCurrentActivityId(activity.id);
+                    setShowDrillDesigner(true);
+                  }}
+                  className="flex items-center space-x-1 px-2 py-1 text-xs bg-white bg-opacity-70 rounded-lg hover:bg-opacity-90 transition-all"
                 >
-            <Pen className="w-3 h-3" />
-            <span>Draw Drill</span>
+                  <Pen className="w-3 h-3" />
+                  <span>Draw Drill</span>
                 </button>
               </div>
               
@@ -487,15 +493,18 @@ const SessionForm: React.FC<SessionFormProps> = ({
             </div>
           </div>
               ))}
-    {/* Drill Designer Modal */}
-    <DrillDesigner
-      isOpen={showDrillDesigner}
-      onClose={() => {
-        setShowDrillDesigner(false);
-      }}
-    />
             </div>
           </div>
+
+          {/* Drill Designer Modal */}
+          <DrillDesigner
+            isOpen={showDrillDesigner}
+            onClose={() => {
+              setShowDrillDesigner(false);
+              setCurrentActivityId(null);
+            }}
+            onSave={handleSaveDrill}
+          />
         </form>
       </div>
     </div>
