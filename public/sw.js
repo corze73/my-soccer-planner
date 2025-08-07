@@ -57,6 +57,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Skip unsupported schemes
+  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+    return;
+  }
+
   // Handle different types of requests
   if (request.method === 'GET') {
     // Static assets - cache first
@@ -75,7 +80,7 @@ self.addEventListener('fetch', (event) => {
             return fetch(request)
               .then((networkResponse) => {
                 // Cache successful responses
-                if (networkResponse.status === 200) {
+                if (networkResponse.status === 200 && networkResponse.url.startsWith('http')) {
                   const responseClone = networkResponse.clone();
                   caches.open(STATIC_CACHE)
                     .then((cache) => {
@@ -103,7 +108,7 @@ self.addEventListener('fetch', (event) => {
         fetch(request)
           .then((networkResponse) => {
             // Cache successful API responses
-            if (networkResponse.status === 200) {
+            if (networkResponse.status === 200 && networkResponse.url.startsWith('http')) {
               const responseClone = networkResponse.clone();
               caches.open(DYNAMIC_CACHE)
                 .then((cache) => {
