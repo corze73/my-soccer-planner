@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, WifiOff, Cloud, CloudOff, Sync, Database } from 'lucide-react';
+import { Wifi, WifiOff, Cloud, CloudOff, FolderSync as Sync, Database } from 'lucide-react';
 import { useOfflineStorage } from '../hooks/useOfflineStorage';
 
 const OfflineIndicator: React.FC = () => {
