@@ -1020,7 +1020,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
 
           {/* Canvas */}
           <div className="flex-1 p-6">
-            <div className="h-full bg-green-400 rounded-lg relative overflow-hidden">
+            <div className="h-full rounded-lg relative overflow-hidden border-2 border-gray-300">
               {/* Dynamic field markings based on pitch type */}
               {renderPitchMarkings()}
 
@@ -1037,6 +1037,12 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               >
                 {items.map(renderItem)}
               </div>
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              <p className="mb-2">
+                <strong>Current Pitch:</strong> {pitchTypes.find(p => p.id === pitchType)?.label}
+              </p>
+              <p>Select a tool and click on the field to place items. Use the select tool to move items around.</p>
             </div>
           </div>
         </div>
