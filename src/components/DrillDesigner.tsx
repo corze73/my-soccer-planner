@@ -962,16 +962,8 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
           {/* Canvas */}
           <div className="flex-1 p-6">
             <div className="h-full bg-green-400 rounded-lg relative overflow-hidden">
-              {/* Field markings */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.3" />
-                <line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="0.2" />
-                <circle cx="50" cy="50" r="8" fill="none" stroke="white" strokeWidth="0.2" />
-                <rect x="2" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.2" />
-                <rect x="80" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.2" />
-                <rect x="2" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.2" />
-                <rect x="90" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.2" />
-              </svg>
+              {/* Dynamic field markings based on pitch type */}
+              {renderPitchMarkings()}
 
               {/* Canvas interaction area */}
               <div
