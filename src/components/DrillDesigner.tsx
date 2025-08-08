@@ -106,6 +106,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   const pitchTypes = [
     { id: 'full', label: 'Full Pitch', description: 'Complete soccer field with grass texture' },
     { id: 'half', label: 'Half Pitch', description: 'Half field from center line to goal' },
+    { id: 'quarter', label: 'Quarter Pitch', description: 'Corner area with goal and penalty box' },
     { id: 'blank', label: 'Blank Field', description: 'Plain grass field with texture' },
   ];
   const getCanvasCoordinates = (e: React.MouseEvent) => {
@@ -452,6 +453,50 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               <rect x="98" y="45" width="2" height="10" fill="url(#goalNet)" opacity="0.3" />
               {/* Corner arcs */}
               <path d="M 98,2 A 2,2 0 0,0 96,4" fill="none" stroke="white" strokeWidth="0.3" />
+              <path d="M 98,98 A 2,2 0 0,1 96,96" fill="none" stroke="white" strokeWidth="0.3" />
+            </svg>
+          </>
+        );
+      
+      case 'quarter':
+        return (
+          <>
+            {/* Grass texture stripes */}
+            <div className="absolute inset-0 w-full h-full">
+              {Array.from({ length: 20 }, (_, i) => (
+                <div
+                  key={i}
+                  className={`absolute w-full h-[5%] ${
+                    i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'
+                  }`}
+                  style={{ top: `${i * 5}%` }}
+                />
+              ))}
+            </div>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Field outline - quarter pitch */}
+              <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.4" />
+              {/* Goal line (right edge) */}
+              <line x1="98" y1="2" x2="98" y2="98" stroke="white" strokeWidth="0.4" />
+              {/* Touchline (bottom edge) */}
+              <line x1="2" y1="98" x2="98" y2="98" stroke="white" strokeWidth="0.4" />
+              {/* Penalty area */}
+              <rect x="80" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Goal area */}
+              <rect x="90" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Penalty spot */}
+              <circle cx="88" cy="50" r="0.5" fill="white" />
+              {/* Penalty arc */}
+              <path d="M 85,40 A 8,8 0 0,0 85,60" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Goal with net */}
+              <rect x="98" y="45" width="2" height="10" fill="none" stroke="white" strokeWidth="0.3" />
+              <defs>
+                <pattern id="quarterGoalNet" x="0" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
+                  <path d="M 0,0 L 1,1 M 1,0 L 0,1" stroke="white" strokeWidth="0.05" opacity="0.6"/>
+                </pattern>
+              </defs>
+              <rect x="98" y="45" width="2" height="10" fill="url(#quarterGoalNet)" opacity="0.3" />
+              {/* Corner arc */}
               <path d="M 98,98 A 2,2 0 0,1 96,96" fill="none" stroke="white" strokeWidth="0.3" />
             </svg>
           </>
