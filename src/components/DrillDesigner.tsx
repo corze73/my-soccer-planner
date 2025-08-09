@@ -1,9 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Pen, Square, Circle, Triangle, Type, Users, Target, Flag, Move, Copy, Trash2, RotateCcw, Redo2, Undo2 } from 'lucide-react';
+import { X, Pen, Square, Circle as LucideCircle, Triangle, Type, Users, Target, Flag, Move, Copy, Trash2, RotateCcw, Redo2, Undo2 } from 'lucide-react';
 
 export interface DrillItem {
   id: string;
-  type: 'player' | 'cone' | 'flag' | 'ball' | 'line' | 'arrow' | 'rectangle' | 'circle' | 'triangle' | 'text';
+  type: 'player' | 'cone' | 'flag' | 'ball' | 'line' | 'arrow' | 'rectangle' | 'circle' | 'triangle' | 'text' | 'notes'
+    | 'soccer-ball' | 'blue-ball' | 'red-ball'
+    | 'pole' | 'blue-disc' | 'red-disc' | 'yellow-disc' | 'blue-hoop' | 'red-hoop' | 'yellow-hoop'
+    | 'small-goal' | 'mini-goal'
+    | 'full-goal' | 'goal-front' | 'goal-3d' | 'goal-side-left' | 'goal-side-right' | 'goal-back'
+    | 'diamond' ;
   x: number;
   y: number;
   width?: number;
@@ -31,28 +36,48 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [history, setHistory] = useState<DrillItem[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [pitchType, setPitchType] = useState<'full' | 'half' | 'blank'>('full');
+  const [pitchType, setPitchType] = useState<'full' | 'half' | 'quarter' | 'blank'>('full'); // <- include 'quarter'
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Add to history when items change
+  // --- Helpers to stop accidental navigation (critical) ---
+  const stopAll = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Add first history snapshot on mount or when drill changes
+  useEffect(() => {
+    const initial = drill?.items ?? [];
+    setItems(initial);
+    setHistory([initial]);
+    setHistoryIndex(0);
+  }, [drill]);
+
+  // Push to history (truncate redo tail)
   const addToHistory = (newItems: DrillItem[]) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push([...newItems]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    setHistory((h) => {
+      const trimmed = h.slice(0, historyIndex + 1);
+      const next = [...trimmed, JSON.parse(JSON.stringify(newItems)) as DrillItem[]];
+      setHistoryIndex(next.length - 1);
+      return next;
+    });
   };
 
   const undo = () => {
     if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setItems([...history[historyIndex - 1]]);
+      const nextIndex = historyIndex - 1;
+      setHistoryIndex(nextIndex);
+      setItems(JSON.parse(JSON.stringify(history[nextIndex])) as DrillItem[]);
+      setSelectedItem(null);
     }
   };
 
   const redo = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      setItems([...history[historyIndex + 1]]);
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      setItems(JSON.parse(JSON.stringify(history[nextIndex])) as DrillItem[]);
+      setSelectedItem(null);
     }
   };
 
@@ -109,56 +134,13 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
     { id: 'quarter', label: 'Quarter Pitch', description: 'Corner area with goal and penalty box' },
     { id: 'blank', label: 'Blank Field', description: 'Plain grass field with texture' },
   ];
+
   const getCanvasCoordinates = (e: React.MouseEvent) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    };
-  };
-
-  const isPointInItem = (point: { x: number; y: number }, item: DrillItem): boolean => {
-    const tolerance = 3;
-    
-    switch (item.type) {
-      case 'player':
-      case 'cone':
-      case 'flag':
-      case 'ball':
-        const distance = Math.sqrt(Math.pow(point.x - item.x, 2) + Math.pow(point.y - item.y, 2));
-        return distance <= tolerance;
-      
-      case 'rectangle':
-        const width = item.width || 8;
-        const height = item.height || 6;
-        return point.x >= item.x - width/2 && point.x <= item.x + width/2 &&
-               point.y >= item.y - height/2 && point.y <= item.y + height/2;
-      
-      case 'circle':
-        const radius = item.width || 4;
-        const circleDistance = Math.sqrt(Math.pow(point.x - item.x, 2) + Math.pow(point.y - item.y, 2));
-        return circleDistance <= radius;
-      
-      case 'text':
-        return point.x >= item.x - 5 && point.x <= item.x + 10 &&
-               point.y >= item.y - 2 && point.y <= item.y + 2;
-      
-      case 'line':
-      case 'arrow':
-        if (!item.points || item.points.length < 2) return false;
-        // Check if point is near any line segment
-        for (let i = 0; i < item.points.length - 1; i++) {
-          const p1 = item.points[i];
-          const p2 = item.points[i + 1];
-          const distToLine = distanceToLineSegment(point, p1, p2);
-          if (distToLine <= tolerance) return true;
-        }
-        return false;
-      
-      default:
-        return false;
-    }
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    return { x, y };
   };
 
   const distanceToLineSegment = (point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }): number => {
@@ -174,11 +156,9 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
 
     let xx, yy;
     if (param < 0) {
-      xx = p1.x;
-      yy = p1.y;
+      xx = p1.x; yy = p1.y;
     } else if (param > 1) {
-      xx = p2.x;
-      yy = p2.y;
+      xx = p2.x; yy = p2.y;
     } else {
       xx = p1.x + param * C;
       yy = p1.y + param * D;
@@ -189,22 +169,65 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  const isPointInItem = (point: { x: number; y: number }, item: DrillItem): boolean => {
+    const tolerance = 3;
+
+    switch (item.type) {
+      case 'player':
+      case 'cone':
+      case 'flag':
+      case 'ball':
+      case 'soccer-ball':
+      case 'blue-ball':
+      case 'red-ball': {
+        const distance = Math.hypot(point.x - item.x, point.y - item.y);
+        return distance <= tolerance;
+      }
+
+      case 'rectangle': {
+        const width = item.width || 8;
+        const height = item.height || 6;
+        return point.x >= item.x - width / 2 && point.x <= item.x + width / 2 &&
+               point.y >= item.y - height / 2 && point.y <= item.y + height / 2;
+      }
+
+      case 'circle': {
+        const radius = item.width || 4;
+        const circleDistance = Math.hypot(point.x - item.x, point.y - item.y);
+        return circleDistance <= radius;
+      }
+
+      case 'text':
+      case 'notes':
+        return point.x >= item.x - 5 && point.x <= item.x + 10 &&
+               point.y >= item.y - 2 && point.y <= item.y + 2;
+
+      case 'line':
+      case 'arrow': {
+        if (!item.points || item.points.length < 2) return false;
+        for (let i = 0; i < item.points.length - 1; i++) {
+          const p1 = item.points[i];
+          const p2 = item.points[i + 1];
+          const distToLine = distanceToLineSegment(point, p1, p2);
+          if (distToLine <= tolerance) return true;
+        }
+        return false;
+      }
+
+      default:
+        return false;
+    }
+  };
+
   const handleCanvasClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+    stopAll(e);
     const coords = getCanvasCoordinates(e);
-    
+
     if (selectedTool === 'select') {
-      // Find clicked item
       const clickedItem = items.find(item => isPointInItem(coords, item));
-      
       if (clickedItem) {
         setSelectedItem(clickedItem.id);
-        setItems(prev => prev.map(item => ({
-          ...item,
-          selected: item.id === clickedItem.id
-        })));
+        setItems(prev => prev.map(item => ({ ...item, selected: item.id === clickedItem.id })));
       } else {
         setSelectedItem(null);
         setItems(prev => prev.map(item => ({ ...item, selected: false })));
@@ -213,8 +236,9 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
     }
 
     // Create new item
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const newItem: DrillItem = {
-      id: Date.now().toString(),
+      id,
       type: selectedTool as DrillItem['type'],
       x: coords.x,
       y: coords.y,
@@ -222,8 +246,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
     };
 
     if (selectedTool === 'rectangle' || selectedTool === 'diamond') {
-      newItem.width = 8;
-      newItem.height = 6;
+      newItem.width = 8; newItem.height = 6;
     } else if (selectedTool === 'circle' || selectedTool.includes('hoop')) {
       newItem.width = 4;
     } else if (selectedTool === 'text') {
@@ -244,6 +267,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
       'pole': '#DC2626',
       'flag': '#DC2626',
       'ball': '#000000',
+      'soccer-ball': '#000000',
       'blue-ball': '#3B82F6',
       'red-ball': '#EF4444',
       'blue-disc': '#3B82F6',
@@ -269,47 +293,33 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+    stopAll(e);
     if (selectedTool !== 'select') return;
-    
+
     const coords = getCanvasCoordinates(e);
     const clickedItem = items.find(item => isPointInItem(coords, item));
-    
+
     if (clickedItem) {
       setIsDragging(true);
       setSelectedItem(clickedItem.id);
-      setDragOffset({
-        x: coords.x - clickedItem.x,
-        y: coords.y - clickedItem.y
-      });
-      
-      setItems(prev => prev.map(item => ({
-        ...item,
-        selected: item.id === clickedItem.id
-      })));
+      setDragOffset({ x: coords.x - clickedItem.x, y: coords.y - clickedItem.y });
+      setItems(prev => prev.map(item => ({ ...item, selected: item.id === clickedItem.id })));
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+    stopAll(e);
     if (!isDragging || !selectedItem) return;
-    
+
     const coords = getCanvasCoordinates(e);
     const newX = Math.max(2, Math.min(98, coords.x - dragOffset.x));
     const newY = Math.max(2, Math.min(98, coords.y - dragOffset.y));
-    
-    setItems(prev => prev.map(item => 
-      item.id === selectedItem 
-        ? { ...item, x: newX, y: newY }
-        : item
-    ));
+
+    setItems(prev => prev.map(item => (item.id === selectedItem ? { ...item, x: newX, y: newY } : item)));
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e?: React.MouseEvent) => {
+    if (e) stopAll(e);
     if (isDragging) {
       addToHistory(items);
       setIsDragging(false);
@@ -326,21 +336,20 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   };
 
   const duplicateSelected = () => {
-    if (selectedItem) {
-      const itemToDuplicate = items.find(item => item.id === selectedItem);
-      if (itemToDuplicate) {
-        const newItem = {
-          ...itemToDuplicate,
-          id: Date.now().toString(),
-          x: Math.min(95, itemToDuplicate.x + 5),
-          y: Math.min(95, itemToDuplicate.y + 5),
-          selected: false
-        };
-        const newItems = [...items, newItem];
-        setItems(newItems);
-        addToHistory(newItems);
-      }
-    }
+    if (!selectedItem) return;
+    const src = items.find(i => i.id === selectedItem);
+    if (!src) return;
+
+    const next: DrillItem = {
+      ...src,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      x: Math.min(95, src.x + 5),
+      y: Math.min(95, src.y + 5),
+      selected: false,
+    };
+    const newItems = [...items, next];
+    setItems(newItems);
+    addToHistory(newItems);
   };
 
   const clearCanvas = () => {
@@ -350,13 +359,11 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   };
 
   const handleSave = () => {
-    if (onSave) {
-      onSave({
-        name: drillName,
-        description: drillDescription,
-        items: items.map(item => ({ ...item, selected: false }))
-      });
-    }
+    onSave?.({
+      name: drillName,
+      description: drillDescription,
+      items: items.map(item => ({ ...item, selected: false })),
+    });
     onClose();
   };
 
@@ -365,42 +372,27 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
       case 'full':
         return (
           <>
-            {/* Grass texture stripes */}
+            {/* Grass stripes */}
             <div className="absolute inset-0 w-full h-full">
               {Array.from({ length: 20 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`absolute w-full h-[5%] ${
-                    i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'
-                  }`}
-                  style={{ top: `${i * 5}%` }}
-                />
+                <div key={i} className={`absolute w-full h-[5%] ${i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'}`} style={{ top: `${i * 5}%` }} />
               ))}
             </div>
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Field outline */}
               <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.4" />
-              {/* Center line */}
               <line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="0.3" />
-              {/* Center circle */}
               <circle cx="50" cy="50" r="8" fill="none" stroke="white" strokeWidth="0.3" />
               <circle cx="50" cy="50" r="0.5" fill="white" />
-              {/* Penalty areas */}
               <rect x="2" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.3" />
               <rect x="80" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal areas */}
               <rect x="2" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.3" />
               <rect x="90" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Penalty spots */}
               <circle cx="12" cy="50" r="0.5" fill="white" />
               <circle cx="88" cy="50" r="0.5" fill="white" />
-              {/* Penalty arcs */}
               <path d="M 15,40 A 8,8 0 0,1 15,60" fill="none" stroke="white" strokeWidth="0.3" />
               <path d="M 85,40 A 8,8 0 0,0 85,60" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goals with nets */}
               <rect x="0" y="45" width="2" height="10" fill="none" stroke="white" strokeWidth="0.3" />
               <rect x="98" y="45" width="2" height="10" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal nets */}
               <defs>
                 <pattern id="goalNet" x="0" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
                   <path d="M 0,0 L 1,1 M 1,0 L 0,1" stroke="white" strokeWidth="0.05" opacity="0.6"/>
@@ -408,7 +400,6 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               </defs>
               <rect x="0" y="45" width="2" height="10" fill="url(#goalNet)" opacity="0.3" />
               <rect x="98" y="45" width="2" height="10" fill="url(#goalNet)" opacity="0.3" />
-              {/* Corner arcs */}
               <path d="M 2,2 A 2,2 0 0,1 4,4" fill="none" stroke="white" strokeWidth="0.3" />
               <path d="M 98,2 A 2,2 0 0,0 96,4" fill="none" stroke="white" strokeWidth="0.3" />
               <path d="M 2,98 A 2,2 0 0,0 4,96" fill="none" stroke="white" strokeWidth="0.3" />
@@ -416,79 +407,48 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
             </svg>
           </>
         );
-      
+
       case 'half':
         return (
           <>
-            {/* Grass texture stripes */}
             <div className="absolute inset-0 w-full h-full">
               {Array.from({ length: 20 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`absolute w-full h-[5%] ${
-                    i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'
-                  }`}
-                  style={{ top: `${i * 5}%` }}
-                />
+                <div key={i} className={`absolute w-full h-[5%] ${i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'}`} style={{ top: `${i * 5}%` }} />
               ))}
             </div>
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Field outline - half pitch */}
               <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.4" />
-              {/* Center line (now at edge) */}
               <line x1="2" y1="2" x2="2" y2="98" stroke="white" strokeWidth="0.4" />
-              {/* Center circle (half) */}
               <path d="M 2,42 A 8,8 0 0,1 2,58" fill="none" stroke="white" strokeWidth="0.3" />
               <circle cx="2" cy="50" r="0.5" fill="white" />
-              {/* Penalty area */}
               <rect x="80" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal area */}
               <rect x="90" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Penalty spot */}
               <circle cx="88" cy="50" r="0.5" fill="white" />
-              {/* Penalty arc */}
               <path d="M 85,40 A 8,8 0 0,0 85,60" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal with net */}
               <rect x="98" y="45" width="2" height="10" fill="none" stroke="white" strokeWidth="0.3" />
               <rect x="98" y="45" width="2" height="10" fill="url(#goalNet)" opacity="0.3" />
-              {/* Corner arcs */}
               <path d="M 98,2 A 2,2 0 0,0 96,4" fill="none" stroke="white" strokeWidth="0.3" />
               <path d="M 98,98 A 2,2 0 0,1 96,96" fill="none" stroke="white" strokeWidth="0.3" />
             </svg>
           </>
         );
-      
+
       case 'quarter':
         return (
           <>
-            {/* Grass texture stripes */}
             <div className="absolute inset-0 w-full h-full">
               {Array.from({ length: 20 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`absolute w-full h-[5%] ${
-                    i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'
-                  }`}
-                  style={{ top: `${i * 5}%` }}
-                />
+                <div key={i} className={`absolute w-full h-[5%] ${i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'}`} style={{ top: `${i * 5}%` }} />
               ))}
             </div>
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Field outline - quarter pitch from corner */}
               <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.4" />
-              {/* Goal line (top edge) */}
               <line x1="2" y1="2" x2="98" y2="2" stroke="white" strokeWidth="0.4" />
-              {/* Touchline (right edge) */}
               <line x1="98" y1="2" x2="98" y2="98" stroke="white" strokeWidth="0.4" />
-              {/* Penalty area - positioned from top */}
               <rect x="20" y="2" width="50" height="18" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal area - positioned from top */}
               <rect x="35" y="2" width="20" height="8" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Penalty spot */}
               <circle cx="45" cy="12" r="0.5" fill="white" />
-              {/* Penalty arc */}
               <path d="M 35,15 A 8,8 0 0,1 55,15" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal with net - at top */}
               <rect x="40" y="0" width="10" height="2" fill="none" stroke="white" strokeWidth="0.3" />
               <defs>
                 <pattern id="quarterGoalNet" x="0" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -496,31 +456,25 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 </pattern>
               </defs>
               <rect x="40" y="0" width="10" height="2" fill="url(#quarterGoalNet)" opacity="0.3" />
-              {/* Corner arc - at bottom right */}
               <path d="M 98,98 A 2,2 0 0,1 96,96" fill="none" stroke="white" strokeWidth="0.3" />
             </svg>
           </>
         );
-      
+
       case 'blank':
         return (
           <div className="absolute inset-0 w-full h-full">
             {Array.from({ length: 20 }, (_, i) => (
-              <div
-                key={i}
-                className={`absolute w-full h-[5%] ${
-                  i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'
-                }`}
-                style={{ top: `${i * 5}%` }}
-              />
+              <div key={i} className={`absolute w-full h-[5%] ${i % 2 === 0 ? 'bg-green-400' : 'bg-green-500'}`} style={{ top: `${i * 5}%` }} />
             ))}
           </div>
         );
-      
+
       default:
         return null;
     }
   };
+
   const renderItem = (item: DrillItem) => {
     const style = {
       position: 'absolute' as const,
@@ -540,54 +494,36 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
       case 'player':
         return (
           <div key={item.id} style={style}>
-            <div 
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: item.color }}
-            >
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: item.color }}>
               P
             </div>
           </div>
         );
-      
+
       case 'cone':
         return (
           <div key={item.id} style={style}>
-            <div 
-              className="w-4 h-4 flex items-center justify-center"
-              style={{ 
-                backgroundColor: item.color,
-                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-              }}
-            />
+            <div className="w-4 h-4 flex items-center justify-center" style={{ backgroundColor: item.color, clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
           </div>
         );
-      
+
       case 'flag':
         return (
           <div key={item.id} style={style}>
             <div className="flex items-center">
               <div className="w-0.5 h-6 bg-gray-600"></div>
-              <div 
-                className="w-4 h-3 ml-0.5"
-                style={{ backgroundColor: item.color }}
-              ></div>
+              <div className="w-4 h-3 ml-0.5" style={{ backgroundColor: item.color }}></div>
             </div>
           </div>
         );
-      
+
       case 'ball':
         return (
           <div key={item.id} style={style}>
-            <div 
-              className="w-4 h-4 rounded-full border-2"
-              style={{ 
-                backgroundColor: item.type === 'soccer-ball' ? '#FFFFFF' : item.color,
-                borderColor: item.type === 'soccer-ball' ? '#000000' : item.color
-              }}
-            />
+            <div className="w-4 h-4 rounded-full border-2" style={{ backgroundColor: '#FFFFFF', borderColor: item.color ?? '#000000' }} />
           </div>
         );
-      
+
       case 'pole':
         return (
           <div key={item.id} style={style}>
@@ -603,13 +539,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
       case 'yellow-disc':
         return (
           <div key={item.id} style={style}>
-            <div 
-              className="w-5 h-2 rounded-full"
-              style={{ 
-                backgroundColor: item.color,
-                transform: 'perspective(20px) rotateX(60deg)'
-              }}
-            />
+            <div className="w-5 h-2 rounded-full" style={{ backgroundColor: item.color, transform: 'perspective(20px) rotateX(60deg)' }} />
           </div>
         );
 
@@ -618,13 +548,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
       case 'yellow-hoop':
         return (
           <div key={item.id} style={style}>
-            <div 
-              className="w-6 h-6 rounded-full border-2"
-              style={{ 
-                borderColor: item.color,
-                backgroundColor: 'transparent'
-              }}
-            />
+            <div className="w-6 h-6 rounded-full border-2" style={{ borderColor: item.color, backgroundColor: 'transparent' }} />
           </div>
         );
 
@@ -634,7 +558,6 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
             <div className="relative">
               <div className="w-16 h-8 border-2 border-white bg-transparent">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white opacity-10"></div>
-                {/* Goal net pattern */}
                 <svg className="w-full h-full" viewBox="0 0 16 8">
                   <defs>
                     <pattern id="net" x="0" y="0" width="2" height="2" patternUnits="userSpaceOnUse">
@@ -653,12 +576,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
         return (
           <div key={item.id} style={style}>
             <div className="flex flex-col items-center">
-              <div 
-                className="w-8 h-4 border-2 border-red-500"
-                style={{ 
-                  borderBottom: 'none'
-                }}
-              />
+              <div className="w-8 h-4 border-2 border-red-500" style={{ borderBottom: 'none' }} />
               <div className="w-8 h-0.5 bg-red-500"></div>
             </div>
           </div>
@@ -669,11 +587,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
         return (
           <div key={item.id} style={style}>
             <div className="relative">
-              <div 
-                className={`w-8 h-8 border-2 border-white bg-transparent ${
-                  item.type === 'goal-side-left' ? 'transform -skew-y-12' : 'transform skew-y-12'
-                }`}
-              >
+              <div className={`w-8 h-8 border-2 border-white bg-transparent ${item.type === 'goal-side-left' ? 'transform -skew-y-12' : 'transform skew-y-12'}`}>
                 <svg className="w-full h-full" viewBox="0 0 8 8">
                   <defs>
                     <pattern id="sideNet" x="0" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -688,71 +602,26 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
         );
 
       case 'rectangle':
-        return (
-          <div 
-            key={item.id} 
-            style={{
-              ...style,
-              width: `${item.width}%`,
-              height: `${item.height}%`,
-              backgroundColor: item.color,
-              opacity: 0.7
-            }}
-          />
-        );
+        return <div key={item.id} style={{ ...style, width: `${item.width}%`, height: `${item.height}%`, backgroundColor: item.color, opacity: 0.7 }} />;
 
       case 'diamond':
-        return (
-          <div 
-            key={item.id} 
-            style={{
-              ...style,
-              width: `${item.width}%`,
-              height: `${item.height}%`,
-              backgroundColor: item.color,
-              opacity: 0.7,
-              transform: 'translate(-50%, -50%) rotate(45deg)'
-            }}
-          />
-        );
-      
+        return <div key={item.id} style={{ ...style, width: `${item.width}%`, height: `${item.height}%`, backgroundColor: item.color, opacity: 0.7, transform: 'translate(-50%, -50%) rotate(45deg)' }} />;
+
       case 'circle':
-        return (
-          <div 
-            key={item.id} 
-            style={{
-              ...style,
-              width: `${item.width * 2}%`,
-              height: `${item.width * 2}%`,
-              backgroundColor: item.color,
-              borderRadius: '50%',
-              opacity: 0.7
-            }}
-          />
-        );
-      
+        return <div key={item.id} style={{ ...style, width: `${(item.width ?? 4) * 2}%`, height: `${(item.width ?? 4) * 2}%`, backgroundColor: item.color, borderRadius: '50%', opacity: 0.7 }} />;
+
       case 'text':
         return (
           <div key={item.id} style={style}>
-            <span 
-              className="text-xs font-bold"
-              style={{ color: item.color }}
-            >
-              {item.text}
-            </span>
+            <span className="text-xs font-bold" style={{ color: item.color }}>{item.text}</span>
           </div>
         );
-      
+
       case 'notes':
         return (
           <div key={item.id} style={style}>
             <div className="bg-yellow-100 border border-yellow-300 rounded p-2 shadow-sm max-w-32">
-              <span 
-                className="text-xs"
-                style={{ color: item.color }}
-              >
-                {item.text}
-              </span>
+              <span className="text-xs" style={{ color: item.color }}>{item.text}</span>
             </div>
           </div>
         );
@@ -774,47 +643,42 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={stopAll}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col" onClick={stopAll}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Drill Designer</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={(e) => { stopAll(e); onClose(); }} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden" onClick={stopAll}>
           {/* Sidebar */}
-          <div className="w-80 border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="w-80 border-r border-gray-200 p-6 overflow-y-auto" onClick={stopAll}>
             <div className="space-y-6">
               {/* Drill Info */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Drill Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Drill Name</label>
                 <input
                   type="text"
                   value={drillName}
                   onChange={(e) => setDrillName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="Enter drill name"
+                  onClick={stopAll}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   value={drillDescription}
                   onChange={(e) => setDrillDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   rows={3}
                   placeholder="Describe the drill..."
+                  onClick={stopAll}
                 />
               </div>
 
@@ -825,12 +689,8 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                     <button
                       type="button"
                       key={pitch.id}
-                      onClick={() => setPitchType(pitch.id as any)}
-                      className={`w-full p-3 text-left rounded-lg border-2 transition-colors ${
-                        pitchType === pitch.id
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
+                      onClick={(e) => { stopAll(e); setPitchType(pitch.id as any); }}
+                      className={`w-full p-3 text-left rounded-lg border-2 transition-colors ${pitchType === pitch.id ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 hover:border-gray-300 text-gray-700'}`}
                     >
                       <div className="font-medium">{pitch.label}</div>
                       <div className="text-xs text-gray-500 mt-1">{pitch.description}</div>
@@ -849,12 +709,8 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                       <button
                         type="button"
                         key={tool.id}
-                        onClick={() => setSelectedTool(tool.id)}
-                        className={`p-3 rounded-lg border-2 transition-colors ${
-                          selectedTool === tool.id
-                            ? 'border-green-500 bg-green-50 text-green-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                        }`}
+                        onClick={(e) => { stopAll(e); setSelectedTool(tool.id); }}
+                        className={`p-3 rounded-lg border-2 transition-colors ${selectedTool === tool.id ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}
                         title={tool.label}
                       >
                         <Icon className="w-5 h-5 mx-auto" />
@@ -873,21 +729,11 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                     <button
                       type="button"
                       key={ball.id}
-                      onClick={() => setSelectedTool(ball.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === ball.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      onClick={(e) => { stopAll(e); setSelectedTool(ball.id); }}
+                      className={`p-3 rounded-lg border-2 transition-colors ${selectedTool === ball.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}
                       title={ball.label}
                     >
-                      <div 
-                        className="w-6 h-6 rounded-full border-2 mx-auto"
-                        style={{ 
-                          backgroundColor: ball.id === 'soccer-ball' ? '#FFFFFF' : ball.color,
-                          borderColor: ball.id === 'soccer-ball' ? '#000000' : ball.color
-                        }}
-                      />
+                      <div className="w-6 h-6 rounded-full border-2 mx-auto" style={{ backgroundColor: ball.id === 'soccer-ball' ? '#FFFFFF' : ball.color, borderColor: ball.id === 'soccer-ball' ? '#000000' : ball.color }} />
                       <span className="text-xs mt-1 block">{ball.label.split(' ')[0]}</span>
                     </button>
                   ))}
@@ -902,30 +748,17 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                     <button
                       type="button"
                       key={item.id}
-                      onClick={() => setSelectedTool(item.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === item.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      onClick={(e) => { stopAll(e); setSelectedTool(item.id); }}
+                      className={`p-3 rounded-lg border-2 transition-colors ${selectedTool === item.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}
                       title={item.label}
                     >
                       {item.id === 'cone' && (
-                        <div 
-                          className="w-4 h-5 mx-auto"
-                          style={{ 
-                            backgroundColor: item.color,
-                            clipPath: 'polygon(50% 0%, 20% 100%, 80% 100%)'
-                          }}
-                        />
+                        <div className="w-4 h-5 mx-auto" style={{ backgroundColor: item.color, clipPath: 'polygon(50% 0%, 20% 100%, 80% 100%)' }} />
                       )}
                       {item.id === 'flag' && (
                         <div className="flex items-center justify-center">
                           <div className="w-0.5 h-4 bg-gray-600"></div>
-                          <div 
-                            className="w-3 h-2 ml-0.5"
-                            style={{ backgroundColor: item.color }}
-                          ></div>
+                          <div className="w-3 h-2 ml-0.5" style={{ backgroundColor: item.color }}></div>
                         </div>
                       )}
                       {item.id === 'pole' && (
@@ -935,37 +768,19 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                         </div>
                       )}
                       {item.id.includes('disc') && (
-                        <div 
-                          className="w-4 h-1.5 rounded-full mx-auto"
-                          style={{ 
-                            backgroundColor: item.color,
-                            transform: 'perspective(10px) rotateX(60deg)'
-                          }}
-                        />
+                        <div className="w-4 h-1.5 rounded-full mx-auto" style={{ backgroundColor: item.color, transform: 'perspective(10px) rotateX(60deg)' }} />
                       )}
                       {item.id.includes('hoop') && (
-                        <div 
-                          className="w-5 h-5 rounded-full border-2 mx-auto"
-                          style={{ 
-                            borderColor: item.color,
-                            backgroundColor: 'transparent'
-                          }}
-                        />
+                        <div className="w-5 h-5 rounded-full border-2 mx-auto" style={{ borderColor: item.color, backgroundColor: 'transparent' }} />
                       )}
                       {item.id.includes('goal') && !item.id.includes('full') && (
                         <div className="flex flex-col items-center">
-                          <div 
-                            className="w-6 h-3 border-2 border-red-500"
-                            style={{ borderBottom: 'none' }}
-                          />
+                          <div className="w-6 h-3 border-2 border-red-500" style={{ borderBottom: 'none' }} />
                           <div className="w-6 h-0.5 bg-red-500"></div>
                         </div>
                       )}
                       {item.id === 'player' && (
-                        <div 
-                          className="w-5 h-6 mx-auto rounded-t-full"
-                          style={{ backgroundColor: item.color }}
-                        />
+                        <div className="w-5 h-6 mx-auto rounded-t-full" style={{ backgroundColor: item.color }} />
                       )}
                       <span className="text-xs mt-1 block">{item.label.split(' ')[0]}</span>
                     </button>
@@ -981,19 +796,15 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                     <button
                       type="button"
                       key={goal.id}
-                      onClick={() => setSelectedTool(goal.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedTool === goal.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      onClick={(e) => { stopAll(e); setSelectedTool(goal.id); }}
+                      className={`p-3 rounded-lg border-2 transition-colors ${selectedTool === goal.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}
                       title={goal.label}
                     >
                       {goal.id === 'full-goal' && (
                         <div className="w-8 h-4 border-2 border-white bg-gray-100 mx-auto relative">
                           <div className="absolute inset-0 opacity-30">
                             <div className="w-full h-full grid grid-cols-4 grid-rows-2 gap-px">
-                              {Array.from({length: 8}).map((_, i) => (
+                              {Array.from({ length: 8 }).map((_, i) => (
                                 <div key={i} className="border border-white"></div>
                               ))}
                             </div>
@@ -1001,11 +812,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                         </div>
                       )}
                       {goal.id.includes('side') && (
-                        <div 
-                          className={`w-4 h-4 border-2 border-white bg-gray-100 mx-auto ${
-                            goal.id.includes('left') ? 'transform -skew-y-12' : 'transform skew-y-12'
-                          }`}
-                        />
+                        <div className={`w-4 h-4 border-2 border-white bg-gray-100 mx-auto ${goal.id.includes('left') ? 'transform -skew-y-12' : 'transform skew-y-12'}`} />
                       )}
                       {(goal.id === 'goal-front' || goal.id === 'goal-3d' || goal.id === 'goal-back') && (
                         <div className="w-6 h-3 border-2 border-white bg-gray-100 mx-auto" />
@@ -1015,13 +822,14 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                   ))}
                 </div>
               </div>
+
               {/* Actions */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Actions</h4>
                 <div className="space-y-2">
                   <div className="flex space-x-2">
                     <button
-                      onClick={undo}
+                      onClick={(e) => { stopAll(e); undo(); }}
                       disabled={historyIndex <= 0}
                       className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -1029,7 +837,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                       <span>Undo</span>
                     </button>
                     <button
-                      onClick={redo}
+                      onClick={(e) => { stopAll(e); redo(); }}
                       disabled={historyIndex >= history.length - 1}
                       className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -1037,28 +845,28 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                       <span>Redo</span>
                     </button>
                   </div>
-                  
+
                   <button
-                    onClick={duplicateSelected}
+                    onClick={(e) => { stopAll(e); duplicateSelected(); }}
                     disabled={!selectedItem}
                     className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Copy className="w-4 h-4" />
                     <span>Duplicate</span>
                   </button>
-                  
+
                   <button
-                    onClick={deleteSelected}
+                    onClick={(e) => { stopAll(e); deleteSelected(); }}
                     disabled={!selectedItem}
                     className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Delete</span>
                   </button>
-                  
+
                   <button
                     type="button"
-                    onClick={clearCanvas}
+                    onClick={(e) => { stopAll(e); clearCanvas(); }}
                     className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -1070,7 +878,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6" onClick={stopAll}>
             <div className="h-full rounded-lg relative overflow-hidden border-2 border-gray-300">
               {/* Dynamic field markings based on pitch type */}
               {renderPitchMarkings()}
@@ -1090,9 +898,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               </div>
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              <p className="mb-2">
-                <strong>Current Pitch:</strong> {pitchTypes.find(p => p.id === pitchType)?.label}
-              </p>
+              <p className="mb-2"><strong>Current Pitch:</strong> {pitchTypes.find(p => p.id === pitchType)?.label}</p>
               <p>Select a tool and click on the field to place items. Use the select tool to move items around.</p>
             </div>
           </div>
@@ -1100,16 +906,10 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
 
         {/* Footer */}
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-          >
+          <button onClick={(e) => { stopAll(e); onClose(); }} className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
+          <button onClick={(e) => { stopAll(e); handleSave(); }} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
             Save Drill
           </button>
         </div>
