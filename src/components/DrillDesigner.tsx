@@ -8,7 +8,7 @@ export interface DrillItem {
     | 'pole' | 'blue-disc' | 'red-disc' | 'yellow-disc' | 'blue-hoop' | 'red-hoop' | 'yellow-hoop'
     | 'small-goal' | 'mini-goal'
     | 'full-goal' | 'goal-front' | 'goal-3d' | 'goal-side-left' | 'goal-side-right' | 'goal-back'
-    | 'diamond' ;
+    | 'diamond';
   x: number;
   y: number;
   width?: number;
@@ -36,16 +36,15 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [history, setHistory] = useState<DrillItem[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [pitchType, setPitchType] = useState<'full' | 'half' | 'quarter' | 'blank'>('full'); // <- include 'quarter'
+  const [pitchType, setPitchType] = useState<'full' | 'half' | 'quarter' | 'blank'>('full');
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // --- Helpers to stop accidental navigation (critical) ---
+  // Stop bubbling + capture to block parent/global click handlers
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
-  // Add first history snapshot on mount or when drill changes
   useEffect(() => {
     const initial = drill?.items ?? [];
     setItems(initial);
@@ -53,7 +52,6 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
     setHistoryIndex(0);
   }, [drill]);
 
-  // Push to history (truncate redo tail)
   const addToHistory = (newItems: DrillItem[]) => {
     setHistory((h) => {
       const trimmed = h.slice(0, historyIndex + 1);
@@ -643,12 +641,32 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={stopAll}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col" onClick={stopAll}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={stopAll}
+      onClickCapture={stopAll}
+      onMouseDownCapture={stopAll}
+      onTouchStartCapture={stopAll}
+      onPointerDownCapture={stopAll}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        onClick={stopAll}
+        onClickCapture={stopAll}
+        onMouseDownCapture={stopAll}
+        onTouchStartCapture={stopAll}
+        onPointerDownCapture={stopAll}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Drill Designer</h3>
-          <button onClick={(e) => { stopAll(e); onClose(); }} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            type="button"
+            onClick={(e) => { stopAll(e); onClose(); }}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -829,6 +847,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="space-y-2">
                   <div className="flex space-x-2">
                     <button
+                      type="button"
                       onClick={(e) => { stopAll(e); undo(); }}
                       disabled={historyIndex <= 0}
                       className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -837,6 +856,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                       <span>Undo</span>
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => { stopAll(e); redo(); }}
                       disabled={historyIndex >= history.length - 1}
                       className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -847,6 +867,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                   </div>
 
                   <button
+                    type="button"
                     onClick={(e) => { stopAll(e); duplicateSelected(); }}
                     disabled={!selectedItem}
                     className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -856,6 +877,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                   </button>
 
                   <button
+                    type="button"
                     onClick={(e) => { stopAll(e); deleteSelected(); }}
                     disabled={!selectedItem}
                     className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -906,10 +928,18 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
 
         {/* Footer */}
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-          <button onClick={(e) => { stopAll(e); onClose(); }} className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+          <button
+            type="button"
+            onClick={(e) => { stopAll(e); onClose(); }}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
             Cancel
           </button>
-          <button onClick={(e) => { stopAll(e); handleSave(); }} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <button
+            type="button"
+            onClick={(e) => { stopAll(e); handleSave(); }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
             Save Drill
           </button>
         </div>
