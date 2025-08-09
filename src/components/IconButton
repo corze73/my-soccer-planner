@@ -1,0 +1,27 @@
+import React from 'react';
+
+type IconButtonProps = {
+  onClick: () => void;
+  title?: string;
+  className?: string;
+  children: React.ReactNode;
+};
+
+export default function IconButton({ onClick, title, className, children }: IconButtonProps) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation(); // stops Weekly Planner navigation
+    onClick();
+  };
+
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={handleClick}
+      className={className ?? 'inline-flex items-center justify-center p-2 rounded hover:bg-neutral-100'}
+    >
+      {children}
+    </button>
+  );
+}
