@@ -18,6 +18,8 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.7.1"
+    "konva": "^9.3.13",
+    "react-konva": "^18.2.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
