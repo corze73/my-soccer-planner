@@ -474,29 +474,29 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
               ))}
             </div>
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Field outline - quarter pitch */}
+              {/* Field outline - quarter pitch from corner */}
               <rect x="2" y="2" width="96" height="96" fill="none" stroke="white" strokeWidth="0.4" />
-              {/* Goal line (right edge) */}
+              {/* Goal line (top edge) */}
+              <line x1="2" y1="2" x2="98" y2="2" stroke="white" strokeWidth="0.4" />
+              {/* Touchline (right edge) */}
               <line x1="98" y1="2" x2="98" y2="98" stroke="white" strokeWidth="0.4" />
-              {/* Touchline (bottom edge) */}
-              <line x1="2" y1="98" x2="98" y2="98" stroke="white" strokeWidth="0.4" />
-              {/* Penalty area */}
-              <rect x="80" y="25" width="18" height="50" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal area */}
-              <rect x="90" y="40" width="8" height="20" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Penalty area - positioned from top */}
+              <rect x="20" y="2" width="50" height="18" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Goal area - positioned from top */}
+              <rect x="35" y="2" width="20" height="8" fill="none" stroke="white" strokeWidth="0.3" />
               {/* Penalty spot */}
-              <circle cx="88" cy="50" r="0.5" fill="white" />
+              <circle cx="45" cy="12" r="0.5" fill="white" />
               {/* Penalty arc */}
-              <path d="M 85,40 A 8,8 0 0,0 85,60" fill="none" stroke="white" strokeWidth="0.3" />
-              {/* Goal with net */}
-              <rect x="98" y="45" width="2" height="10" fill="none" stroke="white" strokeWidth="0.3" />
+              <path d="M 35,15 A 8,8 0 0,1 55,15" fill="none" stroke="white" strokeWidth="0.3" />
+              {/* Goal with net - at top */}
+              <rect x="40" y="0" width="10" height="2" fill="none" stroke="white" strokeWidth="0.3" />
               <defs>
                 <pattern id="quarterGoalNet" x="0" y="0" width="1" height="1" patternUnits="userSpaceOnUse">
                   <path d="M 0,0 L 1,1 M 1,0 L 0,1" stroke="white" strokeWidth="0.05" opacity="0.6"/>
                 </pattern>
               </defs>
-              <rect x="98" y="45" width="2" height="10" fill="url(#quarterGoalNet)" opacity="0.3" />
-              {/* Corner arc */}
+              <rect x="40" y="0" width="10" height="2" fill="url(#quarterGoalNet)" opacity="0.3" />
+              {/* Corner arc - at bottom right */}
               <path d="M 98,98 A 2,2 0 0,1 96,96" fill="none" stroke="white" strokeWidth="0.3" />
             </svg>
           </>
@@ -823,6 +823,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="space-y-2">
                   {pitchTypes.map((pitch) => (
                     <button
+                      type="button"
                       key={pitch.id}
                       onClick={() => setPitchType(pitch.id as any)}
                       className={`w-full p-3 text-left rounded-lg border-2 transition-colors ${
@@ -846,6 +847,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                     const Icon = tool.icon;
                     return (
                       <button
+                        type="button"
                         key={tool.id}
                         onClick={() => setSelectedTool(tool.id)}
                         className={`p-3 rounded-lg border-2 transition-colors ${
@@ -869,6 +871,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="grid grid-cols-3 gap-2">
                   {ballTypes.map((ball) => (
                     <button
+                      type="button"
                       key={ball.id}
                       onClick={() => setSelectedTool(ball.id)}
                       className={`p-3 rounded-lg border-2 transition-colors ${
@@ -897,6 +900,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="grid grid-cols-3 gap-2">
                   {equipmentItems.map((item) => (
                     <button
+                      type="button"
                       key={item.id}
                       onClick={() => setSelectedTool(item.id)}
                       className={`p-3 rounded-lg border-2 transition-colors ${
@@ -975,6 +979,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="grid grid-cols-2 gap-2">
                   {goalTypes.map((goal) => (
                     <button
+                      type="button"
                       key={goal.id}
                       onClick={() => setSelectedTool(goal.id)}
                       className={`p-3 rounded-lg border-2 transition-colors ${
