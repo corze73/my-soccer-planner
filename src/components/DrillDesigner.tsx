@@ -1021,6 +1021,7 @@ const DrillDesigner: React.FC<DrillDesignerProps> = ({ isOpen, onClose, onSave, 
                 <div className="space-y-2">
                   <div className="flex space-x-2">
                     <button
+                      type="button"
                       onClick={undo}
                       disabled={historyIndex <= 0}
                       className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
