@@ -1,182 +1,187 @@
-import React, { useState } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { Plus, Clock, Users, MapPin, Edit, Trash2 } from 'lucide-react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useTrainingSessions } from '../hooks/useTrainingSessions';
-import SessionForm from './SessionForm';
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { Stage, Layer, Circle, Arrow, Group } from 'react-konva';
 
-const WeeklyPlanner: React.FC = () => {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [editingSession, setEditingSession] = useState<any>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const { sessions, createSession, updateSession, deleteSession, loading } = useTrainingSessions();
+type Kind = 'player' | 'cone' | 'ball' | 'arrow';
+type ItemBase = { id: string; kind: Exclude<Kind, 'arrow'>; x: number; y: number };
+type ArrowItem = { id: string; kind: 'arrow'; x: number; y: number; x2: number; y2: number };
+type Item = ItemBase | ArrowItem;
 
-  const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-  const getSessionsForDay = (date: Date) => {
-    return sessions.filter(session => isSameDay(new Date(session.session_date), date));
-  };
-
-  const handleAddSession = (date: Date) => {
-    setSelectedDate(date);
-    setShowAddModal(true);
-  };
-
-  const handleCreateSession = async (sessionData: any) => {
-    console.log('WeeklyPlanner: Creating session with data:', sessionData);
-    
-    let result;
-    if (editingSession) {
-      console.log('WeeklyPlanner: Updating existing session:', editingSession.id);
-      result = await updateSession(editingSession.id, sessionData);
-    } else {
-      console.log('WeeklyPlanner: Creating new session');
-      result = await createSession(sessionData);
-    }
-    
-    console.log('WeeklyPlanner: Session operation result:', result);
-    
-    if (result.error) {
-      console.error('WeeklyPlanner: Session operation failed:', result.error);
-      throw new Error(result.error);
-    } else {
-      console.log('WeeklyPlanner: Session operation successful');
-    }
-  };
-
-  const handleEditSession = (session: any) => {
-    setEditingSession(session);
-    setShowAddModal(true);
-  };
-
-  const handleDeleteSession = async (sessionId: string) => {
-    const result = await deleteSession(sessionId);
-    if (result.error) {
-      alert('Error deleting session: ' + result.error);
-    }
-    setDeleteConfirm(null);
-  };
-
-
-  const closeModal = () => {
-    setShowAddModal(false);
-    setSelectedDate(null);
-    setEditingSession(null);
-  };
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Weekly Training Plan</h2>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setCurrentWeek(addDays(currentWeek, -7))}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Previous Week
-            </button>
-            <span className="text-lg font-medium text-gray-900">
-              {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
-            </span>
-            <button
-              onClick={() => setCurrentWeek(addDays(currentWeek, 7))}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Next Week
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-4 mt-6">
-          {weekDays.map((date) => (
-            <div key={date.toISOString()} className="bg-gray-50 rounded-lg p-3 min-h-[180px] flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-700">{format(date, 'EEE d')}</span>
-                <button
-                  className="p-1 rounded-full hover:bg-gray-200"
-                  onClick={() => handleAddSession(date)}
-                  title="Add session"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-              <div className="flex-1 space-y-2">
-                {getSessionsForDay(date).map((session: any) => (
-                  <div key={session.id} className="bg-white rounded shadow p-2 flex flex-col gap-1 relative group">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-gray-400" />
-                      <span className="text-xs text-gray-600">{session.session_time}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-gray-400" />
-                      <span className="text-xs text-gray-600">{session.team_name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-gray-400" />
-                      <span className="text-xs text-gray-600">{session.location}</span>
-                    </div>
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        className="p-1 rounded hover:bg-gray-100"
-                        onClick={() => handleEditSession(session)}
-                        title="Edit"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        className="p-1 rounded hover:bg-gray-100"
-                        onClick={() => setDeleteConfirm(session.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <SessionForm
-          isOpen={showAddModal || !!editingSession}
-          onClose={closeModal}
-          onSubmit={handleCreateSession}
-          selectedDate={selectedDate || undefined}
-          session={editingSession}
-          loading={loading}
-        />
-
-        {/* Delete Confirmation Modal */}
-        {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">Delete Session</h3>
-              <p className="text-gray-600 mb-4">
-                Are you sure you want to delete this session? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button 
-                  onClick={() => setDeleteConfirm(null)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => handleDeleteSession(deleteConfirm)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </DndProvider>
-  );
+export type DrawingCanvasHandle = {
+  addItem: (kind: Exclude<Kind, 'arrow'>) => void;
+  startArrowMode: () => void;
+  undo: () => void;
+  clear: () => void;
 };
 
-export default WeeklyPlanner;
+// Inline FA pitch SVG (105 x 68 viewBox)
+function PitchSVG({ className }: { className?: string }) {
+  const line = '#ffffff';
+  const grass = '#2e7d32';
+  return (
+    <svg
+      viewBox="0 0 105 68"
+      preserveAspectRatio="xMidYMid meet"
+      className={className ?? 'w-full h-full'}
+      role="img"
+      aria-label="Football pitch"
+    >
+      <rect x="0" y="0" width="105" height="68" fill={grass} />
+      <rect x="1" y="1" width="103" height="66" fill="none" stroke={line} strokeWidth="0.6" />
+      <line x1="52.5" y1="1" x2="52.5" y2="67" stroke={line} strokeWidth="0.4" />
+      <circle cx="52.5" cy="34" r="9.15" fill="none" stroke={line} strokeWidth="0.4" />
+      <circle cx="52.5" cy="34" r="0.35" fill={line} />
+      <rect x="1" y={34 - 20.16/2} width="16.5" height="20.16" fill="none" stroke={line} strokeWidth="0.4" />
+      <rect x={105 - 1 - 16.5} y={34 - 20.16/2} width="16.5" height="20.16" fill="none" stroke={line} strokeWidth="0.4" />
+      <rect x="1" y={34 - 7.32/2} width="5.5" height="7.32" fill="none" stroke={line} strokeWidth="0.4" />
+      <rect x={105 - 1 - 5.5} y={34 - 7.32/2} width="5.5" height="7.32" fill="none" stroke={line} strokeWidth="0.4" />
+      <circle cx={1 + 11} cy="34" r="0.35" fill={line} />
+      <circle cx={105 - 1 - 11} cy="34" r="0.35" fill={line} />
+      <path d={`M ${1+11+9.15} ${34-9.15} A 9.15 9.15 0 0 0 ${1+11+9.15} ${34+9.15}`} fill="none" stroke={line} strokeWidth="0.4" />
+      <path d={`M ${105-1-11-9.15} ${34-9.15} A 9.15 9.15 0 0 1 ${105-1-11-9.15} ${34+9.15}`} fill="none" stroke={line} strokeWidth="0.4" />
+      <circle cx="1" cy="1" r="1" fill="none" stroke={line} strokeWidth="0.3" />
+      <circle cx="104" cy="1" r="1" fill="none" stroke={line} strokeWidth="0.3" />
+      <circle cx="1" cy="67" r="1" fill="none" stroke={line} strokeWidth="0.3" />
+      <circle cx="104" cy="67" r="1" fill="none" stroke={line} strokeWidth="0.3" />
+    </svg>
+  );
+}
+
+function randId() {
+  return (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+}
+
+const DrawingCanvas = forwardRef<DrawingCanvasHandle>(function DrawingCanvas(_props, ref) {
+  // Responsive sizing based on wrapper width with 105:68 aspect
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 960, h: Math.round(960 * (68 / 105)) });
+
+  useLayoutEffect(() => {
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const w = e.contentRect.width;
+        setSize({ w, h: Math.round(w * (68 / 105)) });
+      }
+    });
+    if (wrapperRef.current) ro.observe(wrapperRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Items + history + arrow mode
+  const [items, setItems] = useState<Item[]>([]);
+  const [history, setHistory] = useState<Item[][]>([]);
+  const [arrowMode, setArrowMode] = useState(false);
+  const [arrowStart, setArrowStart] = useState<{ x: number; y: number } | null>(null);
+
+  const pushHistory = (next: Item[]) => {
+    setHistory(h => [...h, items]);
+    setItems(next);
+  };
+
+  useImperativeHandle(ref, () => ({
+    addItem: (kind) => {
+      const next: Item = { id: randId(), kind, x: size.w / 2, y: size.h / 2 };
+      pushHistory([...items, next]);
+    },
+    startArrowMode: () => {
+      setArrowMode(true);
+      setArrowStart(null);
+    },
+    undo: () => {
+      setHistory(h => {
+        if (!h.length) return h;
+        const prev = h[h.length - 1];
+        setItems(prev);
+        return h.slice(0, -1);
+      });
+    },
+    clear: () => pushHistory([]),
+  }), [items, size.w, size.h]);
+
+  // Place arrow with two clicks
+  const handleStageClick = (e: any) => {
+    if (!arrowMode) return;
+    const pos = e.target.getStage()?.getPointerPosition();
+    if (!pos) return;
+
+    if (!arrowStart) {
+      setArrowStart({ x: pos.x, y: pos.y });
+    } else {
+      const arrow: ArrowItem = { id: randId(), kind: 'arrow', x: arrowStart.x, y: arrowStart.y, x2: pos.x, y2: pos.y };
+      pushHistory([...items, arrow]);
+      setArrowMode(false);
+      setArrowStart(null);
+    }
+  };
+
+  const moveItem = (id: string, x: number, y: number) => {
+    setItems(prev => prev.map(it => (it.id === id && it.kind !== 'arrow') ? { ...it, x, y } : it));
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative w-full max-w-5xl mx-auto">
+      {/* Pitch as the background */}
+      <div className="relative rounded-lg overflow-hidden shadow" style={{ width: '100%', aspectRatio: '105 / 68' }}>
+        <PitchSVG className="absolute inset-0 w-full h-full" />
+
+        {/* Konva layer on top */}
+        <Stage
+          width={size.w}
+          height={size.h}
+          className="absolute inset-0"
+          onMouseDown={handleStageClick}
+        >
+          <Layer>
+            {items.map((it) =>
+              it.kind === 'arrow' ? (
+                <Arrow
+                  key={it.id}
+                  points={[(it as ArrowItem).x, (it as ArrowItem).y, (it as ArrowItem).x2, (it as ArrowItem).y2]}
+                  pointerLength={10}
+                  pointerWidth={10}
+                  stroke="white"
+                  fill="white"
+                  strokeWidth={2}
+                />
+              ) : (
+                <Group
+                  key={it.id}
+                  draggable
+                  x={(it as ItemBase).x}
+                  y={(it as ItemBase).y}
+                  onDragMove={(e) => moveItem(it.id, e.target.x(), e.target.y())}
+                >
+                  {it.kind === 'player' && <Circle radius={12} fill="#1e88e5" />}
+                  {it.kind === 'cone' && <Circle radius={8} fill="#ef6c00" />}
+                  {it.kind === 'ball' && <Circle radius={6} fill="#ffeb3b" stroke="black" strokeWidth={1} />}
+                </Group>
+              )
+            )}
+
+            {/* Optional live arrow preview after first click (dashed) */}
+            {arrowMode && arrowStart && (
+              <Arrow
+                points={[arrowStart.x, arrowStart.y, size.w * 0.75, size.h * 0.5]}
+                pointerLength={10}
+                pointerWidth={10}
+                stroke="white"
+                fill="white"
+                strokeWidth={2}
+                dash={[6, 6]}
+              />
+            )}
+          </Layer>
+        </Stage>
+      </div>
+    </div>
+  );
+});
+
+export default DrawingCanvas;
