@@ -10,7 +10,7 @@ type IconButtonProps = {
 export default function IconButton({ onClick, title, className, children }: IconButtonProps) {
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // stops Weekly Planner navigation
+    e.stopPropagation(); // prevents any parent navigation
     onClick();
   };
 
